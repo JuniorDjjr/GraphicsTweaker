@@ -42,15 +42,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTASA Release|Win32'">
-    <OutDir>G:\GTA San Andreas Remaster\modloader\GraphicsTweaker</OutDir>
+    <OutDir>G:\GTA SA The Modded Edition\modloader\GraphicsTweaker\</OutDir>
     <IntDir>$(ProjectDir).obj\GTASA\Release\</IntDir>
     <TargetName>GraphicsTweaker.SA</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GTASA zDebug|Win32'">
-    <OutDir>G:\GTA San Andreas Remaster\modloader\GraphicsTweaker</OutDir>
+    <OutDir>G:\GTA SA The Modded Edition\modloader\GraphicsTweaker\</OutDir>
     <IntDir>$(ProjectDir).obj\GTASA\Debug\</IntDir>
-    <TargetName>GraphicsTweaker.SA_d</TargetName>
+    <TargetName>GraphicsTweaker.SA</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='GTASA Release|Win32'">

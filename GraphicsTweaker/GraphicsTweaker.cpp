@@ -3,6 +3,9 @@
 #include "IniReader/IniReader.h"
 #include "TestCheat.h"
 #include "CTimeCycle.h"
+#include "CFileMgr.h"
+#include <Io.h>
+#include <string>
 
 #include "CMenuManager.h"
 #include "CGame.h"
@@ -13,7 +16,7 @@ using namespace plugin;
 using namespace std;
 using namespace injector;
 
-const string sVersion = "v1.1";
+const string sVersion = "v1.2";
 
 fstream lg;
 
@@ -28,6 +31,8 @@ float g_ForceStaticInteriorAmbientLighting;
 float g_ForceDynamicInteriorAmbientLighting;
 int g_TweakDynamicInteriorAmbientLighting;
 int g_LimitMaddDoggAmbientLighting;
+float g_MultAmbientNight;
+float g_MultColorFilterNight;
 float g_ForceColorFilterR;
 float g_ForceColorFilterG;
 float g_ForceColorFilterB;
@@ -71,8 +76,7 @@ public:
     GraphicsTweaker()
 	{
 		lg.open("GraphicsTweaker.SA.log", fstream::out | fstream::trunc);
-		lg << "by Junior_Djjr - MixMods.com.br" << "\n";
-		lg << "Version " << sVersion << "\n";
+		lg << "GraphicsTweaker " << sVersion << " by Junior_Djjr - MixMods.com.br" << "\n";
 		lg.flush();
 
 		ReadIni();
@@ -140,6 +144,41 @@ public:
 			}
 		}
 
+		// dont work idkw, file time always returns current date
+		/*if (ini.ReadInteger("Quality", "RedirectVanillaTimecycToTimecycp", 0) == true)
+		{
+			if (!g_AlreadyInit)
+			{
+				lg << "RedirectVanillaTimecycToTimecycp enabled" << "\n";
+
+				injector::MakeInline<0x5BBAFC, 0x5BBAFC + 8>([](injector::reg_pack& regs)
+				{
+					//mov     [esp+0F0h+var_D8], 17h
+					*(uint32_t*)(regs.esp + 0xF0 - 0xD8) = 0x17;
+
+					FILE* file = (FILE *)regs.ebx;
+
+					lg << file << endl;
+
+					if (CheckFileTime(file, 2005, 01))
+					{
+						CFileMgr::SetDir("DATA");
+						FILE* fileTimecycp = fopen("timecycp.dat", "rt");
+						if (fileTimecycp)
+						{
+							if (CheckFileTime(fileTimecycp, 2004, 10))
+							{
+								lg << "Using 2004 timecycp.dat instead of 2005 timecyc.dat." << endl;
+								regs.ebx = (uint32_t)fileTimecycp;
+							}
+						}
+						CFileMgr::SetDir("");
+					}
+
+				});
+			}
+		}*/
+
 		if (ini.ReadInteger("Quality", "DisableGamma", 0) == true)
 		{
 			if (!g_AlreadyInit)
@@ -152,6 +191,9 @@ public:
 		if (ini.ReadInteger("Timecycle", "EnableTimecycleTweaks", 0) == true)
 		{
 			g_ForceColorFilterOnlyIfNotSet = ini.ReadInteger("Timecycle", "ForceColorFilterOnlyIfNotSet", 0);
+
+			g_MultAmbientNight = ini.ReadFloat("Timecycle", "MultAmbientNight", 1.0f);
+			g_MultColorFilterNight = ini.ReadFloat("Timecycle", "MultColorFilterNight", 1.0f);
 
 			g_ForceColorFilterR = ini.ReadFloat("Timecycle", "ForceColorFilterR", -1.0f);
 
@@ -343,9 +385,13 @@ public:
 						{
 							if (g_TempWeatherId == 0 && g_TempTimeId == 21) // interior used for Madd Dogg
 							{
-								if (*(float*)(regs.eax + 0x0) > 10.0f) *(float*)(regs.eax + 0x0) = 10.0f;
-								if (*(float*)(regs.eax + 0x4) > 10.0f) *(float*)(regs.eax + 0x4) = 10.0f;
-								if (*(float*)(regs.eax + 0x8) > 10.0f) *(float*)(regs.eax + 0x8) = 10.0f;
+								CPlayerPed* playa = FindPlayerPed(-1);
+								if (playa && (DistanceBetweenPoints(playa->GetPosition(), CVector(1265.8492f, -801.36f, 1089.5667f))) < 70.0f)
+								{
+									if (*(float*)(regs.eax + 0x0) > 10.0f) *(float*)(regs.eax + 0x0) = 10.0f;
+									if (*(float*)(regs.eax + 0x4) > 10.0f) *(float*)(regs.eax + 0x4) = 10.0f;
+									if (*(float*)(regs.eax + 0x8) > 10.0f) *(float*)(regs.eax + 0x8) = 10.0f;
+								}
 							}
 						}
 
@@ -382,6 +428,31 @@ public:
 					else
 					{
 						// Exterior
+						if (g_MultAmbientNight != 1.0f || g_MultColorFilterNight != 1.0f)
+						{
+							float dayNightBalance = plugin::CallAndReturn<float, 0x6FAB30>();
+							if (dayNightBalance > 0.0f)
+							{
+								dayNightBalance += 1.0f;
+								if (g_MultColorFilterNight != 1.0f)
+								{
+									*(float*)(regs.eax + 0x84) *= (dayNightBalance + g_MultColorFilterNight); //a
+									*(float*)(regs.eax + 0x94) *= (dayNightBalance + g_MultColorFilterNight); //a
+								}
+								if (g_MultAmbientNight != 1.0f)
+								{
+									//static
+									*(float*)(regs.eax + 0x0) *= g_MultAmbientNight;
+									*(float*)(regs.eax + 0x4) *= g_MultAmbientNight;
+									*(float*)(regs.eax + 0x8) *= g_MultAmbientNight;
+									//dynamic
+									*(float*)(regs.eax + 0xC) *= g_MultAmbientNight;
+									*(float*)(regs.eax + 0x10) *= g_MultAmbientNight;
+									*(float*)(regs.eax + 0x14) *= g_MultAmbientNight;
+								}
+							}
+						}
+
 						if (g_MultColorFilterR != 1.0f)
 						{
 							*(float*)(regs.eax + 0x78) *= g_MultColorFilterR;
