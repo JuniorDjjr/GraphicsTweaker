@@ -3,6 +3,7 @@
 #include "IniReader/IniReader.h"
 #include "TestCheat.h"
 #include "CTimeCycle.h"
+#include "CRenderer.h"
 #include "CFileMgr.h"
 #include <Io.h>
 #include <string>
@@ -20,6 +21,7 @@ const string sVersion = "v1.2";
 
 fstream lg;
 
+float fOne = 1.0f;
 bool g_AlreadyInit = false;
 int g_TempWeatherId = 999;
 int g_TempTimeId = 999;
@@ -29,6 +31,7 @@ float g_MultStaticAmbientLighting;
 float g_MultDynamicAmbientLighting;
 float g_ForceStaticInteriorAmbientLighting;
 float g_ForceDynamicInteriorAmbientLighting;
+float g_MultPedInteriorAmbientLighting;
 int g_TweakDynamicInteriorAmbientLighting;
 int g_LimitMaddDoggAmbientLighting;
 float g_MultAmbientNight;
@@ -68,6 +71,22 @@ uint8_t SmartAnisotropicFilteringLevel()
 uint8_t ForceAnisotropicFilteringLevel()
 {
 	return g_ForceAnisotropicFilteringLevel;
+}
+
+
+char __cdecl CustomCRendererSetupLightingForEntity(CPhysical* obj)
+{
+	bool ret;
+	CPed* ped = reinterpret_cast<CPed*>(obj);
+	if (ped->m_nAreaCode) {
+		WriteMemory<float*>(0x553EB8 + 2, &g_MultPedInteriorAmbientLighting, true);
+		ret = CRenderer::SetupLightingForEntity(obj);
+		WriteMemory<float*>(0x553EB8 + 2, &fOne, true);
+	}
+	else {
+		ret = CRenderer::SetupLightingForEntity(obj);
+	}
+	return ret;
 }
 
 class GraphicsTweaker
@@ -190,6 +209,16 @@ public:
 
 		if (ini.ReadInteger("Timecycle", "EnableTimecycleTweaks", 0) == true)
 		{
+			g_MultPedInteriorAmbientLighting = ini.ReadFloat("Timecycle", "MultPedInteriorAmbientLighting", -1.0f);
+			if (g_MultPedInteriorAmbientLighting != -1.0f)
+			{
+				if (!g_AlreadyInit)
+				{
+					lg << "MultPedInteriorAmbientLighting enabled" << "\n";
+					patch::RedirectCall(0x553F09, CustomCRendererSetupLightingForEntity, true);
+				}
+			}
+
 			g_ForceColorFilterOnlyIfNotSet = ini.ReadInteger("Timecycle", "ForceColorFilterOnlyIfNotSet", 0);
 
 			g_MultAmbientNight = ini.ReadFloat("Timecycle", "MultAmbientNight", 1.0f);
