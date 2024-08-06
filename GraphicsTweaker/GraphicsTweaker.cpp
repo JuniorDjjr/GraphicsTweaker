@@ -17,7 +17,7 @@ using namespace plugin;
 using namespace std;
 using namespace injector;
 
-const string sVersion = "v1.2";
+const string sVersion = "v1.3.1";
 
 fstream lg;
 
@@ -371,7 +371,7 @@ public:
 								+ *(float*)(regs.eax + 0x90)
 								+ *(float*)(regs.eax + 0x94);
 
-							colorFilterIllumination /= 6.0f;
+							colorFilterIllumination /= 16.0f;
 							colorFilterIllumination -= 100.0f;
 							if (colorFilterIllumination < 1.0f) {
 								colorFilterIllumination = 1.0f;
@@ -381,8 +381,8 @@ public:
 									colorFilterIllumination = 1.0f;
 								}
 								else {
-									if (colorFilterIllumination > 40.0f) {
-										colorFilterIllumination = 40.0f;
+									if (colorFilterIllumination > 10.0f) {
+										colorFilterIllumination = 10.0f;
 									}
 								}
 							}
@@ -401,7 +401,7 @@ public:
 							float lighting = g_ForceStaticInteriorAmbientLighting;
 							if (g_TweakDynamicInteriorAmbientLighting)
 							{
-								colorFilterIllumination /= 5.0f;
+								colorFilterIllumination /= 2.0f;
 								if (colorFilterIllumination < 1.0f) colorFilterIllumination = 1.0f;
 								lighting /= colorFilterIllumination;
 							}
